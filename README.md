@@ -24,7 +24,7 @@ node --harmony server.js
 You need to pass a random oauthconsumer_key in Authorization header.
 
 ```bash
-curl --get 'http://localhost:3000/1.1/search/tweets.json' --data 'q=deniz' --header 'Authorization: OAuth oauthconsumer_key="SoMekEy"'
+curl --get 'http://localhost:3000/1.1/search/tweets.json' --data 'q=deniz' --header 'Authorization: OAuth oauth_consumer_key="SoMekEy"'
 ```
 
 Response HTTP 200 (in limit)

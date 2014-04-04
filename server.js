@@ -1,9 +1,11 @@
 #!/usr/bin/env node --harmony
 'use strict';
+const redis = process.env.REDISTOGO_URL ? 
+        require('redis-url').connect(process.env.REDISTOGO_URL) : 
+        require('redis');
 const
-	express = require('express'),
-	app = express(),
-  redis = require('redis'),
+  express = require('express'),
+  app = express(),
   // open a TCP socket to redis server
   redisClient = require('redis').createClient(), 
   // a class to instantiate a Redis-based backing store for sessions
@@ -136,7 +138,7 @@ function populateRateLimitResponseHeaders(res, limitWindow) {
 
 app.get('/1.1/search/tweets.json', [authed, rateLimited], function(req, res) {
 
-	var authorizationHeader = req.header('Authorization');
+  var authorizationHeader = req.header('Authorization');
 
   var body = {};
   body.query = req.query.q;
@@ -146,9 +148,9 @@ app.get('/1.1/search/tweets.json', [authed, rateLimited], function(req, res) {
   body.responseHeaders['X-Rate-Limit-Remaining'] = res.getHeader('X-Rate-Limit-Remaining');
   body.responseHeaders['X-Rate-Limit-Reset'] = res.getHeader('X-Rate-Limit-Reset');
 
-	res.json(200, body);
+  res.json(200, body);
 });
 
 app.listen(3000, function(){
-	log.info('WebApp', 'ready');
+  log.info('WebApp', 'ready');
 });
