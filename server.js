@@ -1,15 +1,11 @@
 #!/usr/bin/env node --harmony
 'use strict';
-const redis = process.env.REDISTOGO_URL ? 
+const redisClient = process.env.REDISTOGO_URL ? 
         require('redis-url').connect(process.env.REDISTOGO_URL) : 
-        require('redis');
+        require('redis').createClient();
 const
   express = require('express'),
   app = express(),
-  // open a TCP socket to redis server
-  redisClient = require('redis').createClient(), 
-  // a class to instantiate a Redis-based backing store for sessions
-  RedisStore = require('connect-redis')(express),
   async = require('async'),
   log = require('npmlog');
 
