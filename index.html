@@ -1,0 +1,115 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Mock Twitter API Rate Limiter by denizozger</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>Mock Twitter API Rate Limiter</h1>
+        <p>Mocks Twitter API&#39;s rate limit behaviour</p>
+
+        <p class="view"><a href="https://github.com/denizozger/MockTwitterAPIRateLimiter">View the Project on GitHub <small>denizozger/MockTwitterAPIRateLimiter</small></a></p>
+
+
+        <ul>
+          <li><a href="https://github.com/denizozger/MockTwitterAPIRateLimiter/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/denizozger/MockTwitterAPIRateLimiter/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/denizozger/MockTwitterAPIRateLimiter">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <h1>
+<a name="mock-twitter-api-rate-limiter" class="anchor" href="#mock-twitter-api-rate-limiter"><span class="octicon octicon-link"></span></a>Mock Twitter API Rate Limiter</h1>
+
+<p>This application mimics rate limit behaviour of Twitter API. Currently only search is supported.</p>
+
+<h1>
+<a name="requirements" class="anchor" href="#requirements"><span class="octicon octicon-link"></span></a>Requirements</h1>
+
+<ul>
+<li>
+<a href="http://redis.io/">Redis</a> for sessions</li>
+</ul><h1>
+<a name="installation" class="anchor" href="#installation"><span class="octicon octicon-link"></span></a>Installation</h1>
+
+<div class="highlight highlight-bash"><pre>npm install
+</pre></div>
+
+<h1>
+<a name="running" class="anchor" href="#running"><span class="octicon octicon-link"></span></a>Running</h1>
+
+<div class="highlight highlight-bash"><pre>redis-server
+node --harmony server.js
+</pre></div>
+
+<h2>
+<a name="an-example-request" class="anchor" href="#an-example-request"><span class="octicon octicon-link"></span></a>An example request:</h2>
+
+<p>You need to pass a random oauthconsumer_key in Authorization header.</p>
+
+<div class="highlight highlight-bash"><pre>curl --get <span class="s1">'http://localhost:3000/1.1/search/tweets.json'</span> --data <span class="s1">'q=deniz'</span> --header <span class="s1">'Authorization: OAuth oauth_consumer_key="SoMekEy"'</span>
+</pre></div>
+
+<p>Response HTTP 200 (in limit)</p>
+
+<pre><code>{
+  "query": "deniz",
+  "Authorization": "OAuth oauth_consumer_key=\"SoMekEy\"",
+  "responseHeaders": {
+    "X-Rate-Limit-Limit": 450,
+    "X-Rate-Limit-Remaining": 449,
+    "X-Rate-Limit-Reset": 1396580129
+  }
+}
+</code></pre>
+
+<p>Response headers are also set on HTTP response object as well.</p>
+
+<p>Response HTTP 429 (exceeded limit)</p>
+
+<pre><code>{
+  "errors": [
+    {
+      "code": 88,
+      "message": "Rate limit exceeded"
+    }
+  ]
+}
+</code></pre>
+
+<p>Response HTTP 400 (unauthorised)</p>
+
+<pre><code>{
+  "errors": [
+    {
+      "message": "Bad Authentication data",
+      "code": 215
+    }
+  ]
+}
+</code></pre>
+
+<h1>
+<a name="contribution" class="anchor" href="#contribution"><span class="octicon octicon-link"></span></a>Contribution</h1>
+
+<p>I needed to test only search endpoint with one app, so implemented only that. Feel free to create a pull request for other endpoints.</p>
+      </section>
+      <footer>
+        <p>This project is maintained by <a href="https://github.com/denizozger">denizozger</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+    
+  </body>
+</html>
