@@ -147,6 +147,6 @@ app.get('/1.1/search/tweets.json', [authed, rateLimited], function(req, res) {
   res.json(200, body);
 });
 
-app.listen(3000, function(){
+app.listen(process.env.PORT || 3000, function(){
   log.info('WebApp', 'ready');
 });
