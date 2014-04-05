@@ -137,8 +137,11 @@ app.get('/1.1/search/tweets.json', [authed, rateLimited], function(req, res) {
   var authorizationHeader = req.header('Authorization');
 
   var body = {};
+
   body.query = req.query.q;
   body.Authorization = authorizationHeader;
+  body.limitResetAtUtc = new Date(res.getHeader('X-Rate-Limit-Reset') * 1000);
+
   body.responseHeaders = {};
   body.responseHeaders['X-Rate-Limit-Limit'] = res.getHeader('X-Rate-Limit-Limit');
   body.responseHeaders['X-Rate-Limit-Remaining'] = res.getHeader('X-Rate-Limit-Remaining');
