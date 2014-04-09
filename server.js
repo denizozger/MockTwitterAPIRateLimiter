@@ -141,10 +141,6 @@ function getCurrentLimitWindow(req, callback) {
     } else {
 
       if (!limitWindow) {
-
-        console.log('DOLU')
-        console.log(limitWindow)
-
         var now = Math.round(new Date().getTime() / 1000);
 
         limitWindow = {
@@ -152,11 +148,7 @@ function getCurrentLimitWindow(req, callback) {
           end : now + fifteenMinutesInSeconds,
           limitRemaining : searchLimitPerApp - 1
         }
-      } else {
-
-        console.log('BOS')
-        console.log(limitWindow)
-      }
+      } 
 
       callback(limitWindow);      
     }
@@ -200,8 +192,6 @@ app.get('/1.1/application/rate_limit_status.json', [authed], function(req, res) 
     body.resources.search['/search/tweets'].remaining = limitWindow.limitRemaining;
     body.resources.search['/search/tweets'].reset = limitWindow.end;
     body.resources.search['/search/tweets'].limit = searchLimitPerApp;
-
-    console.log(body.resources.search['/search/tweets'])
 
     res.json(200, body); 
 
