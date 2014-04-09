@@ -58,7 +58,7 @@ function isRequestAuthenticated(req) {
  * Rate limit middleware
  */
 const rateLimited = function(req, res, middlewareNext) {
-  var consumerKey = req.header('Authorization').substring(25,50);
+  var consumerKey = getConsumerKeyFromRequest(req);
   var now = Math.round(new Date().getTime() / 1000);
 
   async.waterfall([
@@ -122,10 +122,45 @@ function populateRateLimitResponseHeaders(res, limitWindow) {
     log.info('WebApp', 'Limit end: ' + new Date(limitWindow.end * 1000));
     log.info('WebApp', 'Limit remaining: ' + limitWindow.limitRemaining);
 
-    res.setHeader('X-Rate-Limit-Limit', 450);
+    res.setHeader('X-Rate-Limit-Limit', searchLimitPerApp);
     res.setHeader('X-Rate-Limit-Remaining', limitWindow.limitRemaining);
     res.setHeader('X-Rate-Limit-Reset', limitWindow.end);
   }
+}
+
+function getConsumerKeyFromRequest(req) {
+  return req.header('Authorization').substring(25,50);
+}
+
+function getCurrentLimitWindow(req, callback) {
+  var consumerKey = getConsumerKeyFromRequest(req);
+
+  redisClient.hgetall(consumerKey, function(err, limitWindow) {
+    if (err) {
+      log.error(err);
+    } else {
+
+      if (!limitWindow) {
+
+        console.log('DOLU')
+        console.log(limitWindow)
+
+        var now = Math.round(new Date().getTime() / 1000);
+
+        limitWindow = {
+          start : now,
+          end : now + fifteenMinutesInSeconds,
+          limitRemaining : searchLimitPerApp - 1
+        }
+      } else {
+
+        console.log('BOS')
+        console.log(limitWindow)
+      }
+
+      callback(limitWindow);      
+    }
+  });  
 }
 
 /**
@@ -138,9 +173,12 @@ app.get('/1.1/search/tweets.json', [authed, rateLimited], function(req, res) {
 
   var body = {};
 
-  body.query = req.query.q;
-  body.Authorization = authorizationHeader;
-  body.limitResetAtUtc = new Date(res.getHeader('X-Rate-Limit-Reset') * 1000);
+  body.helpers = {};
+  body.helpers.Authorization = authorizationHeader;
+  body.helpers.limitResetAtUtc = new Date(res.getHeader('X-Rate-Limit-Reset') * 1000);
+
+  body.statuses = [];
+  body['search_metadata'] = {};
 
   body.responseHeaders = {};
   body.responseHeaders['X-Rate-Limit-Limit'] = res.getHeader('X-Rate-Limit-Limit');
@@ -148,6 +186,26 @@ app.get('/1.1/search/tweets.json', [authed, rateLimited], function(req, res) {
   body.responseHeaders['X-Rate-Limit-Reset'] = res.getHeader('X-Rate-Limit-Reset');
 
   res.json(200, body);
+});
+
+app.get('/1.1/application/rate_limit_status.json', [authed], function(req, res) {
+
+  getCurrentLimitWindow(req, function (limitWindow) {
+
+    var body = {};
+  
+    body.resources = {};
+    body.resources.search = {};
+    body.resources.search['/search/tweets'] = {};
+    body.resources.search['/search/tweets'].remaining = limitWindow.limitRemaining;
+    body.resources.search['/search/tweets'].reset = limitWindow.end;
+    body.resources.search['/search/tweets'].limit = searchLimitPerApp;
+
+    console.log(body.resources.search['/search/tweets'])
+
+    res.json(200, body); 
+
+  });
 });
 
 app.listen(process.env.PORT || 3000, function(){
