@@ -30,8 +30,6 @@ const fifteenMinutesInSeconds = 900;
 const searchLimitPerApp = 450;
 // const searchLimitPerUser = 180;
 const randomTweet = require('./tweet.json');
-const totalTweetCount = 1000;
-var allTweets = [];
 
 /**
  * Authentication middleware
@@ -160,14 +158,20 @@ function getCurrentLimitWindow(req, callback) {
 }
 
 function generateTweets(count) {
+  var tweets = [];
+
   for (var i = 0; count && i < count; i++) {
-    allTweets.push(getRandomTweet());
+    tweets.push(getRandomTweet());
   }
+
+  return tweets;
 }
 
 function getRandomTweet() {
   var newRandomTweet = getClone(randomTweet);
+
   newRandomTweet.text = (Math.random() + 1).toString(36);
+
   return newRandomTweet;
 }
 
@@ -177,7 +181,7 @@ function getClone(obj){
     }
 
     var temp = new obj.constructor(); 
-    
+
     for(var key in obj) {
       temp[key] = getClone(obj[key]);
     }
@@ -192,6 +196,8 @@ function getClone(obj){
 app.get('/1.1/search/tweets.json', [authed, rateLimited], function(req, res) {
 
   var authorizationHeader = req.header('Authorization');
+  var query = req.query.q ? req.query.q : '';
+  var resultsPerPage = req.query.count ? req.query.count : 100;
 
   var body = {};
 
@@ -199,18 +205,18 @@ app.get('/1.1/search/tweets.json', [authed, rateLimited], function(req, res) {
   body.helpers.Authorization = authorizationHeader;
   body.helpers.limitResetAtUtc = new Date(res.getHeader('X-Rate-Limit-Reset') * 1000);
 
-  body.statuses = allTweets;
+  body.statuses = generateTweets(resultsPerPage);
 
   body['search_metadata'] = {
-    "max_id": 250126199840518145,
-    "since_id": 24012619984051000,
-    "refresh_url": "?since_id=250126199840518145&q=%23test&result_type=mixed&include_entities=1",
-    "next_results": "?max_id=249279667666817023&q=%23test&count=4&include_entities=1&result_type=mixed",
-    "count": totalTweetCount,
-    "completed_in": 0.035,
-    "since_id_str": "24012619984051000",
-    "query": "%23test",
-    "max_id_str": "250126199840518145"
+    'max_id': 250126199840518145,
+    'since_id': 24012619984051000,
+    'refresh_url': '?since_id=250126199840518145&q=' + query + '&result_type=mixed&include_entities=1',
+    'next_results': '?max_id=249279667666817023&q=' + query + '&count=4&include_entities=1&result_type=mixed',
+    'count': body.statuses.length,
+    'completed_in': 0.035,
+    'since_id_str': '24012619984051000',
+    'query': query,
+    'max_id_str': '250126199840518145'
   };
 
   body.responseHeaders = {};
@@ -240,9 +246,12 @@ app.get('/1.1/application/rate_limit_status.json', [authed], function(req, res) 
 });
 
 app.listen(process.env.PORT || 3000, function() {
-  log.info('WebApp', 'Populating ' + totalTweetCount + ' tweets..');
-
-  generateTweets(totalTweetCount);
-
   log.info('WebApp', 'Ready');
 });
+
+
+// Utilities that you don't need to take a lool
+
+function getRandomInt (min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
