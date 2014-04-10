@@ -23,10 +23,15 @@ redisClient
 .on('ready', function() { log.info('Redis', 'ready'); })
 .on('error', function(err) { log.error('Redis', err.message); });
 
-// Application constants
+log.level = 'info';
+
+// Application constants and variables
 const fifteenMinutesInSeconds = 900;
 const searchLimitPerApp = 450;
 // const searchLimitPerUser = 180;
+const randomTweet = require('./tweet.json');
+const totalTweetCount = 1000;
+var allTweets = [];
 
 /**
  * Authentication middleware
@@ -68,7 +73,6 @@ const rateLimited = function(req, res, middlewareNext) {
       },
       
       function rejectIfLimitIsExceeded(limitWindow, next) {
-        
         if (limitWindow && limitWindow.end > now) {
 
           if (limitWindow.limitRemaining <= 0) {
@@ -109,7 +113,7 @@ const rateLimited = function(req, res, middlewareNext) {
 
     ], function(err, res, body) {
       if (err) { 
-        throw err; 
+        log.error(err); 
       } 
 
       return middlewareNext();
@@ -118,9 +122,9 @@ const rateLimited = function(req, res, middlewareNext) {
 
 function populateRateLimitResponseHeaders(res, limitWindow) {
   if (res && limitWindow) {
-    log.info('WebApp', 'Limit start: ' + new Date(limitWindow.start * 1000));
-    log.info('WebApp', 'Limit end: ' + new Date(limitWindow.end * 1000));
-    log.info('WebApp', 'Limit remaining: ' + limitWindow.limitRemaining);
+    log.verbose('WebApp', 'Limit start: %j', new Date(limitWindow.start * 1000));
+    log.verbose('WebApp', 'Limit end: %j', new Date(limitWindow.end * 1000));
+    log.verbose('WebApp', 'Limit remaining: %j', limitWindow.limitRemaining);
 
     res.setHeader('X-Rate-Limit-Limit', searchLimitPerApp);
     res.setHeader('X-Rate-Limit-Remaining', limitWindow.limitRemaining);
@@ -138,8 +142,8 @@ function getCurrentLimitWindow(req, callback) {
   redisClient.hgetall(consumerKey, function(err, limitWindow) {
     if (err) {
       log.error(err);
+      callback(err, null);
     } else {
-
       if (!limitWindow) {
         var now = Math.round(new Date().getTime() / 1000);
 
@@ -150,9 +154,35 @@ function getCurrentLimitWindow(req, callback) {
         }
       } 
 
-      callback(limitWindow);      
+      callback(null, limitWindow);      
     }
   });  
+}
+
+function generateTweets(count) {
+  for (var i = 0; count && i < count; i++) {
+    allTweets.push(getRandomTweet());
+  }
+}
+
+function getRandomTweet() {
+  var newRandomTweet = getClone(randomTweet);
+  newRandomTweet.text = (Math.random() + 1).toString(36);
+  return newRandomTweet;
+}
+
+function getClone(obj){
+    if (obj == null || typeof(obj) != 'object') {
+      return obj;
+    }
+
+    var temp = new obj.constructor(); 
+    
+    for(var key in obj) {
+      temp[key] = getClone(obj[key]);
+    }
+        
+    return temp;
 }
 
 /**
@@ -169,20 +199,31 @@ app.get('/1.1/search/tweets.json', [authed, rateLimited], function(req, res) {
   body.helpers.Authorization = authorizationHeader;
   body.helpers.limitResetAtUtc = new Date(res.getHeader('X-Rate-Limit-Reset') * 1000);
 
-  body.statuses = [];
-  body['search_metadata'] = {};
+  body.statuses = allTweets;
+
+  body['search_metadata'] = {
+    "max_id": 250126199840518145,
+    "since_id": 24012619984051000,
+    "refresh_url": "?since_id=250126199840518145&q=%23test&result_type=mixed&include_entities=1",
+    "next_results": "?max_id=249279667666817023&q=%23test&count=4&include_entities=1&result_type=mixed",
+    "count": totalTweetCount,
+    "completed_in": 0.035,
+    "since_id_str": "24012619984051000",
+    "query": "%23test",
+    "max_id_str": "250126199840518145"
+  };
 
   body.responseHeaders = {};
   body.responseHeaders['X-Rate-Limit-Limit'] = res.getHeader('X-Rate-Limit-Limit');
   body.responseHeaders['X-Rate-Limit-Remaining'] = res.getHeader('X-Rate-Limit-Remaining');
   body.responseHeaders['X-Rate-Limit-Reset'] = res.getHeader('X-Rate-Limit-Reset');
 
-  res.json(200, body);
+  res.json(200, body)
 });
 
 app.get('/1.1/application/rate_limit_status.json', [authed], function(req, res) {
 
-  getCurrentLimitWindow(req, function (limitWindow) {
+  getCurrentLimitWindow(req, function (err, limitWindow) {
 
     var body = {};
   
@@ -198,6 +239,10 @@ app.get('/1.1/application/rate_limit_status.json', [authed], function(req, res) 
   });
 });
 
-app.listen(process.env.PORT || 3000, function(){
-  log.info('WebApp', 'ready');
+app.listen(process.env.PORT || 3000, function() {
+  log.info('WebApp', 'Populating ' + totalTweetCount + ' tweets..');
+
+  generateTweets(totalTweetCount);
+
+  log.info('WebApp', 'Ready');
 });
