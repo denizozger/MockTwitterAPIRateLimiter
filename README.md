@@ -66,6 +66,10 @@ Response HTTP 400 (unauthorised)
 }
 ```
 
+# Known issues
+
+Rate limit might mess up if you are using the application on Heroku + not in UTC time zone. If you run the applicaiton on your local there won't be any issues. This is to be fixed soon (anyime between in an hour - never).
+
 # Contribution
 
 I needed to test only search endpoint with one app, so implemented only that. Feel free to create a pull request for other endpoints.
