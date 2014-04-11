@@ -246,11 +246,15 @@ app.get('/1.1/application/rate_limit_status.json', [authed], function(req, res) 
 });
 
 app.listen(process.env.PORT || 3000, function() {
-  log.info('WebApp', 'Ready');
+
+  redisClient.flushall(function () {
+    log.info('WebApp', 'Ready');
+  });
+  
 });
 
 
-// Utilities that you don't need to take a lool
+// Utilities that you don't need to take a look
 
 function getRandomInt (min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
